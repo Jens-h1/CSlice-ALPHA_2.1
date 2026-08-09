@@ -12,6 +12,12 @@ const materialBrowser = document.getElementById("materialBrowser");
 const materialName = document.getElementById("materialName");
 const materialDescription = document.getElementById("materialDescription");
 const materialSpecs = document.getElementById("materialSpecs");
+const saveProjectButton = document.getElementById("saveProjectButton");
+const layerHeightSelect = document.querySelectorAll(".settings select")[1];
+
+let selectedMaterial = null;
+let selectedPattern = "Grid";
+let loadedModelName = null;
 
 slider.addEventListener("input", () => {
   number.textContent = slider.value;
@@ -21,6 +27,7 @@ patterns.forEach(pattern => {
   pattern.addEventListener("click", () => {
     patterns.forEach(item => item.classList.remove("selected"));
     pattern.classList.add("selected");
+    selectedPattern = pattern.dataset.pattern || pattern.textContent.trim();
   });
 });
 
@@ -61,6 +68,7 @@ async function loadFile(file) {
   try {
     document.getElementById("viewerStatus").textContent = `Loading ${file.name}…`;
     const buffer = await file.arrayBuffer();
+    loadedModelName = file.name;
     if (window.csliceViewer) {
       window.csliceViewer.loadSTL(buffer, file.name);
     } else {
@@ -77,7 +85,32 @@ resetViewButton.addEventListener("click", () => window.csliceViewer?.resetView()
 
 printerSelect.addEventListener("change", () => {
   const printer = printerSelect.options[printerSelect.selectedIndex].text;
-  document.getElementById("viewerStatus").textContent = `${printer} selected — build plate preview updated`;
+  document.getElementById("viewerStatus").textContent = `${printer} selected`;
+});
+
+saveProjectButton.addEventListener("click", () => {
+  const project = {
+    format: "CSlice Project",
+    version: 1,
+    createdAt: new Date().toISOString(),
+    printer: printerSelect.value,
+    filament: selectedMaterial?.name || null,
+    layerHeight: layerHeightSelect?.value || "0.20mm Standard",
+    infill: {
+      density: Number(slider.value),
+      pattern: selectedPattern
+    },
+    model: loadedModelName
+  };
+
+  const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${loadedModelName ? loadedModelName.replace(/\.stl$/i, "") : "CSlice-project"}.cslice.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+  document.getElementById("viewerStatus").textContent = "Project saved";
 });
 
 async function loadMaterialLibrary() {
@@ -129,6 +162,7 @@ async function loadMaterialLibrary() {
 }
 
 function selectMaterial(variant, family, selectedButton) {
+  selectedMaterial = { ...variant, family: family.family };
   document.querySelectorAll(".material-variant").forEach(button => button.classList.remove("selected"));
   selectedButton.classList.add("selected");
 
