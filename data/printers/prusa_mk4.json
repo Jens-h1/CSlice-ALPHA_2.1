@@ -1,0 +1,8 @@
+{
+  "id": "prusa-mk4",
+  "name": "Prusa MK4",
+  "manufacturer": "Prusa Research",
+  "buildVolume": { "x": 250, "y": 210, "z": 220 },
+  "defaultNozzle": 0.4,
+  "supportedMaterials": ["PLA", "PETG", "ABS", "ASA", "TPU", "PA", "PC"]
+}
