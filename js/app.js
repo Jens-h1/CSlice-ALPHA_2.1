@@ -14,6 +14,11 @@ const materialDescription = document.getElementById("materialDescription");
 const materialSpecs = document.getElementById("materialSpecs");
 const saveProjectButton = document.getElementById("saveProjectButton");
 const layerHeightSelect = document.getElementById("layerHeightSelect");
+const transformButtons = {
+  translate: document.getElementById("moveButton"),
+  rotate: document.getElementById("rotateButton"),
+  scale: document.getElementById("scaleButton")
+};
 
 let selectedMaterial = null;
 let selectedPattern = "Grid";
@@ -29,6 +34,14 @@ patterns.forEach(pattern => {
     patterns.forEach(item => item.classList.remove("selected"));
     pattern.classList.add("selected");
     selectedPattern = pattern.dataset.pattern || pattern.textContent.trim();
+  });
+});
+
+Object.entries(transformButtons).forEach(([mode, button]) => {
+  button.addEventListener("click", () => {
+    Object.values(transformButtons).forEach(item => item.classList.remove("active"));
+    button.classList.add("active");
+    window.csliceViewer?.setTransformMode(mode);
   });
 });
 
@@ -127,10 +140,7 @@ async function loadPrinterLibrary() {
       const response = await fetch(`data/printers/${file}`, { cache: "no-store" });
       if (!response.ok) throw new Error(`Could not load ${file}`);
       const profile = await response.json();
-      return {
-        ...profile,
-        id: profile.id || file.replace(/\.json$/i, "")
-      };
+      return { ...profile, id: profile.id || file.replace(/\.json$/i, "") };
     }));
 
     printerSelect.innerHTML = "";
