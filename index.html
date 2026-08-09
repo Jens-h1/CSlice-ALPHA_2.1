@@ -29,16 +29,14 @@
     </select>
 
     <h2>Filament</h2>
-    <select id="filamentSelect">
-      <option>PLA</option>
-      <option>PLA HS</option>
-      <option>PETG</option>
-      <option>PETG HS</option>
-      <option>ABS</option>
-      <option>ABS HS</option>
-      <option>ASA</option>
-      <option>ASA HS</option>
-    </select>
+    <div class="material-browser" id="materialBrowser">
+      <div class="material-loading">Loading material library…</div>
+    </div>
+    <div class="material-card" id="materialCard">
+      <strong id="materialName">No material selected</strong>
+      <span id="materialDescription">Choose a material family and variant.</span>
+      <div class="material-specs" id="materialSpecs"></div>
+    </div>
 
     <h2>Layer Height</h2>
     <select>
