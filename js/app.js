@@ -13,11 +13,12 @@ const materialName = document.getElementById("materialName");
 const materialDescription = document.getElementById("materialDescription");
 const materialSpecs = document.getElementById("materialSpecs");
 const saveProjectButton = document.getElementById("saveProjectButton");
-const layerHeightSelect = document.querySelectorAll(".settings select")[1];
+const layerHeightSelect = document.getElementById("layerHeightSelect");
 
 let selectedMaterial = null;
 let selectedPattern = "Grid";
 let loadedModelName = null;
+let printerProfiles = [];
 
 slider.addEventListener("input", () => {
   number.textContent = slider.value;
@@ -84,8 +85,12 @@ fitButton.addEventListener("click", () => window.csliceViewer?.fitModel());
 resetViewButton.addEventListener("click", () => window.csliceViewer?.resetView());
 
 printerSelect.addEventListener("change", () => {
-  const printer = printerSelect.options[printerSelect.selectedIndex].text;
-  document.getElementById("viewerStatus").textContent = `${printer} selected`;
+  const printer = printerProfiles.find(profile => profile.id === printerSelect.value);
+  if (printer?.buildVolume && window.csliceViewer?.setBuildPlate) {
+    window.csliceViewer.setBuildPlate(printer.buildVolume.x, printer.buildVolume.y);
+  }
+  const printerName = printer?.name || printerSelect.options[printerSelect.selectedIndex]?.text;
+  document.getElementById("viewerStatus").textContent = `${printerName} selected`;
 });
 
 saveProjectButton.addEventListener("click", () => {
@@ -112,6 +117,39 @@ saveProjectButton.addEventListener("click", () => {
   URL.revokeObjectURL(url);
   document.getElementById("viewerStatus").textContent = "Project saved";
 });
+
+async function loadPrinterLibrary() {
+  try {
+    const indexResponse = await fetch("data/printers/index.json", { cache: "no-store" });
+    if (!indexResponse.ok) throw new Error("Printer index could not be loaded");
+    const index = await indexResponse.json();
+    printerProfiles = await Promise.all(index.printers.map(async file => {
+      const response = await fetch(`data/printers/${file}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`Could not load ${file}`);
+      const profile = await response.json();
+      return {
+        ...profile,
+        id: profile.id || file.replace(/\.json$/i, "")
+      };
+    }));
+
+    printerSelect.innerHTML = "";
+    printerProfiles.forEach(profile => {
+      const option = document.createElement("option");
+      option.value = profile.id;
+      option.textContent = profile.name;
+      printerSelect.appendChild(option);
+    });
+
+    const firstPrinter = printerProfiles[0];
+    if (firstPrinter?.buildVolume && window.csliceViewer?.setBuildPlate) {
+      window.csliceViewer.setBuildPlate(firstPrinter.buildVolume.x, firstPrinter.buildVolume.y);
+    }
+  } catch (error) {
+    console.error(error);
+    printerSelect.innerHTML = '<option value="k2-plus">Creality K2 Plus</option>';
+  }
+}
 
 async function loadMaterialLibrary() {
   try {
@@ -181,4 +219,5 @@ function formatRange(value) {
   return value;
 }
 
+loadPrinterLibrary();
 loadMaterialLibrary();
