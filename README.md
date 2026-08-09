@@ -10,9 +10,10 @@ Free browser-based 3D slicer project.
 - STL file loading from the Open STL button
 - STL drag-and-drop support
 - Automatic model centering and fit-to-view
-- Model dimensions display
-- 350 × 350 mm K2 Plus build plate preview
-- JSON-backed material library
+- Model dimensions and build-plate fit status
+- Printer-profile-driven build plate dimensions
+- Move, rotate and scale transform tools
+- JSON-backed printer and material libraries
 - Expandable material families and variants
 - Material recommendation cards
 - Infill density control with live percentage display
