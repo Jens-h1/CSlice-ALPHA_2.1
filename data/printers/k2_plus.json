@@ -1,10 +1,11 @@
 {
+  "id": "k2-plus",
   "name": "Creality K2 Plus",
   "manufacturer": "Creality",
-  "bed": {
-    "width": 350,
-    "depth": 350,
-    "height": 350
+  "buildVolume": {
+    "x": 350,
+    "y": 350,
+    "z": 350
   },
   "defaultNozzle": 0.4,
   "supportedMaterials": [
@@ -13,6 +14,7 @@
     "PETG",
     "PETG HS",
     "ABS",
+    "ABS HS",
     "ASA",
     "ASA HS"
   ]
