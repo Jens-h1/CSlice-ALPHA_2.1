@@ -1,265 +1,47 @@
-const slider = document.getElementById("infillSlider");
-const number = document.getElementById("infillNumber");
+const $ = id => document.getElementById(id);
+const slider = $("infillSlider"), number = $("infillNumber");
 const patterns = document.querySelectorAll(".pattern");
-const stlInput = document.getElementById("stlInput");
-const openStlButton = document.getElementById("openStlButton");
-const viewport = document.getElementById("viewport");
-const dropOverlay = document.getElementById("dropOverlay");
-const fitButton = document.getElementById("fitButton");
-const resetViewButton = document.getElementById("resetViewButton");
-const printerSelect = document.getElementById("printerSelect");
-const materialBrowser = document.getElementById("materialBrowser");
-const materialName = document.getElementById("materialName");
-const materialDescription = document.getElementById("materialDescription");
-const materialSpecs = document.getElementById("materialSpecs");
-const saveProjectButton = document.getElementById("saveProjectButton");
-const layerHeightSelect = document.getElementById("layerHeightSelect");
-const transformButtons = {
-  translate: document.getElementById("moveButton"),
-  rotate: document.getElementById("rotateButton"),
-  scale: document.getElementById("scaleButton")
-};
+const stlInput=$("stlInput"), projectInput=$("projectInput"), openStlButton=$("openStlButton");
+const viewport=$("viewport"), dropOverlay=$("dropOverlay"), printerSelect=$("printerSelect");
+const materialBrowser=$("materialBrowser"), materialName=$("materialName"), materialDescription=$("materialDescription"), materialSpecs=$("materialSpecs");
+const saveProjectButton=$("saveProjectButton"), openProjectButton=$("openProjectButton"), layerHeightSelect=$("layerHeightSelect");
+const objectList=$("objectList"), printerSummary=$("printerSummary");
+const transformButtons={translate:$("moveButton"),rotate:$("rotateButton"),scale:$("scaleButton")};
+let selectedMaterial=null, selectedPattern="Grid", loadedModelName=null, printerProfiles=[], materialFamilies=[];
 
-let selectedMaterial = null;
-let selectedPattern = "Grid";
-let loadedModelName = null;
-let printerProfiles = [];
-let materialFamilies = [];
+slider.addEventListener("input",()=>number.textContent=slider.value);
+patterns.forEach(pattern=>pattern.addEventListener("click",()=>{patterns.forEach(p=>p.classList.remove("selected"));pattern.classList.add("selected");selectedPattern=pattern.dataset.pattern||pattern.textContent.trim();}));
+Object.entries(transformButtons).forEach(([mode,button])=>button.addEventListener("click",()=>{Object.values(transformButtons).forEach(b=>b.classList.remove("active"));button.classList.add("active");window.csliceViewer?.setTransformMode(mode);}));
 
-slider.addEventListener("input", () => {
-  number.textContent = slider.value;
-});
+openStlButton.addEventListener("click",()=>stlInput.click()); $("addObjectButton").addEventListener("click",()=>stlInput.click());
+stlInput.addEventListener("change",e=>{const file=e.target.files?.[0];if(file)loadFile(file);e.target.value="";});
 
-patterns.forEach(pattern => {
-  pattern.addEventListener("click", () => {
-    patterns.forEach(item => item.classList.remove("selected"));
-    pattern.classList.add("selected");
-    selectedPattern = pattern.dataset.pattern || pattern.textContent.trim();
-  });
-});
+["dragenter","dragover"].forEach(name=>viewport.addEventListener(name,e=>{e.preventDefault();dropOverlay.classList.remove("hidden");dropOverlay.classList.add("active");}));
+["dragleave","drop"].forEach(name=>viewport.addEventListener(name,e=>{e.preventDefault();dropOverlay.classList.remove("active");}));
+viewport.addEventListener("drop",e=>{const file=e.dataTransfer.files?.[0];if(!file)return;if(!file.name.toLowerCase().endsWith(".stl")){setStatus("Please drop an STL file");return;}loadFile(file);});
+async function loadFile(file){try{setStatus(`Loading ${file.name}…`);const buffer=await file.arrayBuffer();loadedModelName=file.name;window.csliceViewer?.loadSTL(buffer,file.name);}catch(error){console.error(error);setStatus("Could not read the STL file");}}
+function setStatus(text){$("viewerStatus").textContent=text;}
 
-Object.entries(transformButtons).forEach(([mode, button]) => {
-  button.addEventListener("click", () => {
-    Object.values(transformButtons).forEach(item => item.classList.remove("active"));
-    button.classList.add("active");
-    window.csliceViewer?.setTransformMode(mode);
-  });
-});
+$("fitButton").addEventListener("click",()=>window.csliceViewer?.fitModel()); $("resetViewButton").addEventListener("click",()=>window.csliceViewer?.resetView());
+$("deleteObjectButton").addEventListener("click",()=>window.csliceViewer?.removeObject()); $("duplicateObjectButton").addEventListener("click",()=>window.csliceViewer?.duplicateObject());
 
-openStlButton.addEventListener("click", () => stlInput.click());
+printerSelect.addEventListener("change",()=>applyPrinter(printerProfiles.find(p=>p.id===printerSelect.value)));
+async function applyPrinter(printer){if(!printer)return;const v=printer.buildVolume;if(v)window.csliceViewer?.setBuildPlate(v.x,v.y,v.z);printerSummary.innerHTML=`<b>${v.x} × ${v.y} × ${v.z} mm</b><span>${printer.manufacturer} • ${printer.defaultNozzle||0.4} mm nozzle</span>`;updateMaterialAvailability(printer);setStatus(`${printer.name} — ${v.x} × ${v.y} × ${v.z} mm build volume`);}
 
-stlInput.addEventListener("change", event => {
-  const file = event.target.files?.[0];
-  if (file) loadFile(file);
-  event.target.value = "";
-});
+async function loadPrinterLibrary(){try{const r=await fetch("data/printers/index.json",{cache:"no-store"});if(!r.ok)throw Error();const index=await r.json();printerProfiles=await Promise.all(index.printers.map(async file=>{const x=await fetch(`data/printers/${file}`,{cache:"no-store"});return {...await x.json(),id:(await x.clone().json()).id||file.replace(/\.json$/i,"")};}));printerSelect.innerHTML="";printerProfiles.forEach(p=>{const o=document.createElement("option");o.value=p.id;o.textContent=p.name;printerSelect.appendChild(o);});const saved=localStorage.getItem("cslice-printer");if(saved&&printerProfiles.some(p=>p.id===saved))printerSelect.value=saved;localStorage.setItem("cslice-printer",printerSelect.value);await applyPrinter(printerProfiles.find(p=>p.id===printerSelect.value));}catch(e){console.error(e);printerSelect.innerHTML='<option value="k2-plus">Creality K2 Plus</option>';}}
 
-["dragenter", "dragover"].forEach(eventName => {
-  viewport.addEventListener(eventName, event => {
-    event.preventDefault();
-    dropOverlay.classList.remove("hidden");
-    dropOverlay.classList.add("active");
-  });
-});
+async function loadMaterialLibrary(){try{const r=await fetch("data/materials/index.json",{cache:"no-store"});const index=await r.json();materialFamilies=await Promise.all(index.families.map(async file=>{const x=await fetch(`data/materials/${file}`,{cache:"no-store"});return x.json();}));renderMaterialLibrary();}catch(e){console.error(e);materialBrowser.innerHTML='<div class="material-loading">Material library unavailable</div>';}}
+function renderMaterialLibrary(){materialBrowser.innerHTML="";const printer=printerProfiles.find(p=>p.id===printerSelect.value);materialFamilies.forEach((family,fi)=>{const details=document.createElement("details");details.className="material-family";if(fi===0)details.open=true;const summary=document.createElement("summary");summary.textContent=family.family;details.appendChild(summary);const variants=document.createElement("div");variants.className="material-variants";family.variants.forEach((variant,vi)=>{const b=document.createElement("button");b.className="material-variant";b.textContent=variant.name;const supported=!printer?.supportedMaterials||printer.supportedMaterials.some(n=>n.toLowerCase()===variant.name.toLowerCase());if(!supported){b.classList.add("unsupported");b.title=`${variant.name} is not listed as supported by ${printer.name}`;}b.onclick=()=>selectMaterial(variant,family,b);variants.appendChild(b);if(fi===0&&vi===0&&!selectedMaterial)selectMaterial(variant,family,b);});details.appendChild(variants);materialBrowser.appendChild(details);});}
+function updateMaterialAvailability(printer){if(!materialFamilies.length)return;renderMaterialLibrary();if(selectedMaterial&&!printer.supportedMaterials?.some(n=>n.toLowerCase()===selectedMaterial.name.toLowerCase()))setStatus(`${printer.name} — selected material may not be supported`);}
+function selectMaterial(variant,family,button){selectedMaterial={...variant,family:family.family};document.querySelectorAll(".material-variant").forEach(b=>b.classList.remove("selected"));button.classList.add("selected");materialName.textContent=`${family.family} — ${variant.name}`;materialDescription.textContent=variant.description;materialSpecs.innerHTML=`<div class="material-spec"><b>Nozzle</b>${formatRange(variant.recommendedNozzle)}°C</div><div class="material-spec"><b>Bed</b>${formatRange(variant.recommendedBed)}°C</div><div class="material-spec"><b>Fan</b>${formatRange(variant.fan)}%</div><div class="material-spec"><b>Speed</b>${formatRange(variant.speed)} mm/s</div>`;}
+function formatRange(v){if(Array.isArray(v))return v.length===2?`${v[0]}–${v[1]}`:v.join(" / ");return v;}
 
-["dragleave", "drop"].forEach(eventName => {
-  viewport.addEventListener(eventName, event => {
-    event.preventDefault();
-    dropOverlay.classList.remove("active");
-  });
-});
+function syncObjectList(){const objects=window.csliceViewer?.getObjects?.()||[];const selected=window.csliceViewer?.getSelectedId?.();objectList.innerHTML="";if(!objects.length){objectList.innerHTML='<div class="empty-objects">No objects loaded</div>';return;}objects.forEach(o=>{const b=document.createElement("button");b.className=`object-item ${o.id===selected?"selected":""}`;b.innerHTML=`<span class="object-icon">◇</span><span class="object-name">${escapeHtml(o.name)}</span><span class="object-state ${o.fits?"ok":"bad"}">${o.fits?"✓":"!"}</span>`;b.onclick=()=>window.csliceViewer?.selectObject(o.id);objectList.appendChild(b);});}
+window.csliceApp={syncObjectList};
+function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));}
 
-viewport.addEventListener("drop", event => {
-  const file = event.dataTransfer.files?.[0];
-  if (!file) return;
-  if (!file.name.toLowerCase().endsWith(".stl")) {
-    document.getElementById("viewerStatus").textContent = "Please drop an STL file";
-    return;
-  }
-  loadFile(file);
-});
+saveProjectButton.addEventListener("click",()=>{const project={format:"CSlice Project",version:2,createdAt:new Date().toISOString(),printer:printerSelect.value,filament:selectedMaterial?.name||null,layerHeight:Number(layerHeightSelect.value),infill:{density:Number(slider.value),pattern:selectedPattern},objects:window.csliceViewer?.serializeObjects?.()||[]};const blob=new Blob([JSON.stringify(project,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download=`${loadedModelName?loadedModelName.replace(/\.stl$/i,""):"CSlice-project"}.cslice.json`;link.click();URL.revokeObjectURL(url);setStatus("Project saved");});
+openProjectButton.addEventListener("click",()=>projectInput.click());projectInput.addEventListener("change",e=>{const f=e.target.files?.[0];if(f)loadProject(f);e.target.value="";});
+async function loadProject(file){try{const project=JSON.parse(await file.text());if(project.printer&&printerProfiles.some(p=>p.id===project.printer)){printerSelect.value=project.printer;await applyPrinter(printerProfiles.find(p=>p.id===project.printer));}if(project.layerHeight)layerHeightSelect.value=String(project.layerHeight);if(project.infill){slider.value=project.infill.density??20;number.textContent=slider.value;patterns.forEach(p=>p.classList.toggle("selected",p.dataset.pattern===project.infill.pattern));selectedPattern=project.infill.pattern||"Grid";}for(const o of project.objects||[])if(o.dataUrl){const raw=atob(o.dataUrl.split(",")[1]);const bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));window.csliceViewer?.loadSTL(bytes.buffer,o.name,o);}setStatus("Project settings loaded — STL geometry is kept local to the original browser session");}catch(e){console.error(e);setStatus("Could not open this CSlice project");}}
 
-async function loadFile(file) {
-  try {
-    document.getElementById("viewerStatus").textContent = `Loading ${file.name}…`;
-    const buffer = await file.arrayBuffer();
-    loadedModelName = file.name;
-    if (window.csliceViewer) {
-      window.csliceViewer.loadSTL(buffer, file.name);
-    } else {
-      setTimeout(() => window.csliceViewer?.loadSTL(buffer, file.name), 100);
-    }
-  } catch (error) {
-    console.error(error);
-    document.getElementById("viewerStatus").textContent = "Could not read the STL file";
-  }
-}
-
-fitButton.addEventListener("click", () => window.csliceViewer?.fitModel());
-resetViewButton.addEventListener("click", () => window.csliceViewer?.resetView());
-
-printerSelect.addEventListener("change", () => {
-  const printer = printerProfiles.find(profile => profile.id === printerSelect.value);
-  if (!printer) return;
-
-  if (printer.buildVolume && window.csliceViewer?.setBuildPlate) {
-    window.csliceViewer.setBuildPlate(printer.buildVolume.x, printer.buildVolume.y, printer.buildVolume.z);
-  }
-
-  updateMaterialAvailability(printer);
-
-  const volume = printer.buildVolume;
-  document.getElementById("viewerStatus").textContent = `${printer.name} — ${volume.x} × ${volume.y} × ${volume.z} mm build volume`;
-  window.csliceViewer?.fitModel();
-});
-
-saveProjectButton.addEventListener("click", () => {
-  const project = {
-    format: "CSlice Project",
-    version: 1,
-    createdAt: new Date().toISOString(),
-    printer: printerSelect.value,
-    filament: selectedMaterial?.name || null,
-    layerHeight: layerHeightSelect?.value || "0.20mm Standard",
-    infill: {
-      density: Number(slider.value),
-      pattern: selectedPattern
-    },
-    model: loadedModelName
-  };
-
-  const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${loadedModelName ? loadedModelName.replace(/\.stl$/i, "") : "CSlice-project"}.cslice.json`;
-  link.click();
-  URL.revokeObjectURL(url);
-  document.getElementById("viewerStatus").textContent = "Project saved";
-});
-
-async function loadPrinterLibrary() {
-  try {
-    const indexResponse = await fetch("data/printers/index.json", { cache: "no-store" });
-    if (!indexResponse.ok) throw new Error("Printer index could not be loaded");
-    const index = await indexResponse.json();
-    printerProfiles = await Promise.all(index.printers.map(async file => {
-      const response = await fetch(`data/printers/${file}`, { cache: "no-store" });
-      if (!response.ok) throw new Error(`Could not load ${file}`);
-      const profile = await response.json();
-      return { ...profile, id: profile.id || file.replace(/\.json$/i, "") };
-    }));
-
-    printerSelect.innerHTML = "";
-    printerProfiles.forEach(profile => {
-      const option = document.createElement("option");
-      option.value = profile.id;
-      option.textContent = profile.name;
-      printerSelect.appendChild(option);
-    });
-
-    const firstPrinter = printerProfiles[0];
-    if (firstPrinter?.buildVolume && window.csliceViewer?.setBuildPlate) {
-      window.csliceViewer.setBuildPlate(firstPrinter.buildVolume.x, firstPrinter.buildVolume.y, firstPrinter.buildVolume.z);
-    }
-    if (firstPrinter) updateMaterialAvailability(firstPrinter);
-  } catch (error) {
-    console.error(error);
-    printerSelect.innerHTML = '<option value="k2-plus">Creality K2 Plus</option>';
-  }
-}
-
-async function loadMaterialLibrary() {
-  try {
-    const indexResponse = await fetch("data/materials/index.json", { cache: "no-store" });
-    if (!indexResponse.ok) throw new Error("Material index could not be loaded");
-    const index = await indexResponse.json();
-
-    materialFamilies = await Promise.all(index.families.map(async file => {
-      const response = await fetch(`data/materials/${file}`, { cache: "no-store" });
-      if (!response.ok) throw new Error(`Could not load ${file}`);
-      return response.json();
-    }));
-
-    renderMaterialLibrary();
-  } catch (error) {
-    console.error(error);
-    materialBrowser.innerHTML = '<div class="material-loading">Material library unavailable</div>';
-  }
-}
-
-function renderMaterialLibrary() {
-  materialBrowser.innerHTML = "";
-  const printer = printerProfiles.find(profile => profile.id === printerSelect.value);
-
-  materialFamilies.forEach((family, familyIndex) => {
-    const details = document.createElement("details");
-    details.className = "material-family";
-    if (familyIndex === 0) details.open = true;
-
-    const summary = document.createElement("summary");
-    summary.textContent = family.family;
-    details.appendChild(summary);
-
-    const variants = document.createElement("div");
-    variants.className = "material-variants";
-
-    family.variants.forEach((variant, variantIndex) => {
-      const button = document.createElement("button");
-      button.className = "material-variant";
-      button.textContent = variant.name;
-      button.dataset.materialId = variant.id;
-
-      const supported = !printer?.supportedMaterials || printer.supportedMaterials.some(name => name.toLowerCase() === variant.name.toLowerCase());
-      if (!supported) {
-        button.classList.add("unsupported");
-        button.title = `${variant.name} is not listed as supported by ${printer.name}`;
-      }
-
-      button.addEventListener("click", () => selectMaterial(variant, family, button));
-      variants.appendChild(button);
-
-      if (familyIndex === 0 && variantIndex === 0 && !selectedMaterial) {
-        selectMaterial(variant, family, button);
-      }
-    });
-
-    details.appendChild(variants);
-    materialBrowser.appendChild(details);
-  });
-}
-
-function updateMaterialAvailability(printer) {
-  if (!materialFamilies.length) return;
-  renderMaterialLibrary();
-
-  if (selectedMaterial) {
-    const supported = printer.supportedMaterials?.some(name => name.toLowerCase() === selectedMaterial.name.toLowerCase());
-    if (!supported) {
-      document.getElementById("viewerStatus").textContent += " — selected material may not be supported";
-    }
-  }
-}
-
-function selectMaterial(variant, family, selectedButton) {
-  selectedMaterial = { ...variant, family: family.family };
-  document.querySelectorAll(".material-variant").forEach(button => button.classList.remove("selected"));
-  selectedButton.classList.add("selected");
-
-  materialName.textContent = `${family.family} — ${variant.name}`;
-  materialDescription.textContent = variant.description;
-  materialSpecs.innerHTML = `
-    <div class="material-spec"><b>Nozzle</b>${formatRange(variant.recommendedNozzle)}°C</div>
-    <div class="material-spec"><b>Bed</b>${formatRange(variant.recommendedBed)}°C</div>
-    <div class="material-spec"><b>Fan</b>${formatRange(variant.fan)}%</div>
-    <div class="material-spec"><b>Speed</b>${formatRange(variant.speed)} mm/s</div>
-  `;
-}
-
-function formatRange(value) {
-  if (Array.isArray(value)) return value.length === 2 ? `${value[0]}–${value[1]}` : value.join(" / ");
-  return value;
-}
-
-loadPrinterLibrary();
-loadMaterialLibrary();
+loadPrinterLibrary();loadMaterialLibrary();
