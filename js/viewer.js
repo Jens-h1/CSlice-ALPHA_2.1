@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { TransformControls } from "three/addons/controls/TransformControls.js";
 import { STLLoader } from "three/addons/loaders/STLLoader.js";
 
 const viewport = document.getElementById("viewport");
@@ -26,20 +27,25 @@ controls.target.set(0, 0, 0);
 controls.minDistance = 30;
 controls.maxDistance = 1800;
 
+const transformControls = new TransformControls(camera, renderer.domElement);
+scene.add(transformControls.getHelper());
+transformControls.setMode("translate");
+transformControls.setSpace("world");
+transformControls.addEventListener("dragging-changed", event => {
+  controls.enabled = !event.value;
+});
+
 const ambient = new THREE.HemisphereLight(0xffffff, 0x172033, 2.2);
 scene.add(ambient);
-
 const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
 keyLight.position.set(250, 400, 300);
 scene.add(keyLight);
-
 const fillLight = new THREE.DirectionalLight(0x8ab4ff, 0.9);
 fillLight.position.set(-300, 250, -250);
 scene.add(fillLight);
 
 const buildPlate = new THREE.Group();
 scene.add(buildPlate);
-
 let buildWidth = 350;
 let buildDepth = 350;
 
@@ -65,7 +71,6 @@ scene.add(axes);
 function setBuildPlate(width, depth) {
   buildWidth = Number(width) || 350;
   buildDepth = Number(depth) || 350;
-
   plate.scale.set(buildWidth, buildDepth, 1);
   grid.scale.set(buildWidth, buildDepth, 1);
 
@@ -78,7 +83,6 @@ function setBuildPlate(width, depth) {
     new THREE.Vector3(-halfWidth, halfDepth, 0.3),
     new THREE.Vector3(-halfWidth, -halfDepth, 0.3)
   ]);
-
   axes.position.set(-halfWidth + 25, -halfDepth + 25, 1);
 }
 
@@ -132,6 +136,7 @@ function fitModel() {
 
 function removeCurrentModel() {
   if (!currentModel) return;
+  transformControls.detach();
   scene.remove(currentModel);
   currentModel.traverse(object => {
     if (object.geometry) object.geometry.dispose();
@@ -155,15 +160,9 @@ export function loadSTL(arrayBuffer, fileName = "model.stl") {
     const fits = size.x <= buildWidth && size.y <= buildDepth;
 
     setStatus(fits ? `${fileName} loaded successfully` : `${fileName} is larger than the build plate`);
-
     removeCurrentModel();
 
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x60a5fa,
-      roughness: 0.58,
-      metalness: 0.08
-    });
-
+    const material = new THREE.MeshStandardMaterial({ color: 0x60a5fa, roughness: 0.58, metalness: 0.08 });
     currentModel = new THREE.Mesh(geometry, material);
 
     const box = new THREE.Box3().setFromObject(currentModel);
@@ -175,6 +174,7 @@ export function loadSTL(arrayBuffer, fileName = "model.stl") {
 
     scene.add(currentModel);
     currentModelSize = size;
+    transformControls.attach(currentModel);
     updateInfo(fileName, size);
     overlay.classList.add("hidden");
     fitModel();
@@ -184,10 +184,19 @@ export function loadSTL(arrayBuffer, fileName = "model.stl") {
   }
 }
 
+function setTransformMode(mode) {
+  if (!currentModel) {
+    setStatus("Load an STL model first");
+    return;
+  }
+  transformControls.setMode(mode);
+}
+
 window.csliceViewer = {
   loadSTL,
   fitModel,
   setBuildPlate,
+  setTransformMode,
   resetView: () => {
     camera.position.set(Math.max(buildWidth, buildDepth) * 0.85, Math.max(buildWidth, buildDepth) * 0.85, Math.max(buildWidth, buildDepth));
     controls.target.set(0, 0, 0);
