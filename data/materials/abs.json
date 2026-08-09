@@ -1,0 +1,24 @@
+{
+  "family": "ABS",
+  "icon": "dark",
+  "variants": [
+    {
+      "id": "abs",
+      "name": "ABS",
+      "description": "Heat-resistant engineering plastic; enclosure recommended.",
+      "recommendedNozzle": [240, 260],
+      "recommendedBed": [90, 110],
+      "fan": [0, 20],
+      "speed": [100, 250]
+    },
+    {
+      "id": "abs_hs",
+      "name": "ABS HS",
+      "description": "High-speed ABS for enclosed high-temperature printers.",
+      "recommendedNozzle": [250, 270],
+      "recommendedBed": [95, 110],
+      "fan": [0, 20],
+      "speed": [250, 450]
+    }
+  ]
+}
