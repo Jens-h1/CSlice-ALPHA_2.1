@@ -1,0 +1,8 @@
+{
+  "id": "bambu-x1c",
+  "name": "Bambu Lab X1 Carbon",
+  "manufacturer": "Bambu Lab",
+  "buildVolume": { "x": 256, "y": 256, "z": 256 },
+  "defaultNozzle": 0.4,
+  "supportedMaterials": ["PLA", "PETG", "ABS", "ASA", "TPU", "PA", "PC"]
+}
