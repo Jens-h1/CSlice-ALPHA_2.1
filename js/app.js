@@ -24,6 +24,7 @@ let selectedMaterial = null;
 let selectedPattern = "Grid";
 let loadedModelName = null;
 let printerProfiles = [];
+let materialFamilies = [];
 
 slider.addEventListener("input", () => {
   number.textContent = slider.value;
@@ -99,11 +100,17 @@ resetViewButton.addEventListener("click", () => window.csliceViewer?.resetView()
 
 printerSelect.addEventListener("change", () => {
   const printer = printerProfiles.find(profile => profile.id === printerSelect.value);
-  if (printer?.buildVolume && window.csliceViewer?.setBuildPlate) {
-    window.csliceViewer.setBuildPlate(printer.buildVolume.x, printer.buildVolume.y);
+  if (!printer) return;
+
+  if (printer.buildVolume && window.csliceViewer?.setBuildPlate) {
+    window.csliceViewer.setBuildPlate(printer.buildVolume.x, printer.buildVolume.y, printer.buildVolume.z);
   }
-  const printerName = printer?.name || printerSelect.options[printerSelect.selectedIndex]?.text;
-  document.getElementById("viewerStatus").textContent = `${printerName} selected`;
+
+  updateMaterialAvailability(printer);
+
+  const volume = printer.buildVolume;
+  document.getElementById("viewerStatus").textContent = `${printer.name} — ${volume.x} × ${volume.y} × ${volume.z} mm build volume`;
+  window.csliceViewer?.fitModel();
 });
 
 saveProjectButton.addEventListener("click", () => {
@@ -153,8 +160,9 @@ async function loadPrinterLibrary() {
 
     const firstPrinter = printerProfiles[0];
     if (firstPrinter?.buildVolume && window.csliceViewer?.setBuildPlate) {
-      window.csliceViewer.setBuildPlate(firstPrinter.buildVolume.x, firstPrinter.buildVolume.y);
+      window.csliceViewer.setBuildPlate(firstPrinter.buildVolume.x, firstPrinter.buildVolume.y, firstPrinter.buildVolume.z);
     }
+    if (firstPrinter) updateMaterialAvailability(firstPrinter);
   } catch (error) {
     console.error(error);
     printerSelect.innerHTML = '<option value="k2-plus">Creality K2 Plus</option>';
@@ -167,45 +175,69 @@ async function loadMaterialLibrary() {
     if (!indexResponse.ok) throw new Error("Material index could not be loaded");
     const index = await indexResponse.json();
 
-    const families = await Promise.all(index.families.map(async file => {
+    materialFamilies = await Promise.all(index.families.map(async file => {
       const response = await fetch(`data/materials/${file}`, { cache: "no-store" });
       if (!response.ok) throw new Error(`Could not load ${file}`);
       return response.json();
     }));
 
-    materialBrowser.innerHTML = "";
-
-    families.forEach((family, familyIndex) => {
-      const details = document.createElement("details");
-      details.className = "material-family";
-      if (familyIndex === 0) details.open = true;
-
-      const summary = document.createElement("summary");
-      summary.textContent = family.family;
-      details.appendChild(summary);
-
-      const variants = document.createElement("div");
-      variants.className = "material-variants";
-
-      family.variants.forEach((variant, variantIndex) => {
-        const button = document.createElement("button");
-        button.className = "material-variant";
-        button.textContent = variant.name;
-        button.dataset.materialId = variant.id;
-        button.addEventListener("click", () => selectMaterial(variant, family, button));
-        variants.appendChild(button);
-
-        if (familyIndex === 0 && variantIndex === 0) {
-          selectMaterial(variant, family, button);
-        }
-      });
-
-      details.appendChild(variants);
-      materialBrowser.appendChild(details);
-    });
+    renderMaterialLibrary();
   } catch (error) {
     console.error(error);
     materialBrowser.innerHTML = '<div class="material-loading">Material library unavailable</div>';
+  }
+}
+
+function renderMaterialLibrary() {
+  materialBrowser.innerHTML = "";
+  const printer = printerProfiles.find(profile => profile.id === printerSelect.value);
+
+  materialFamilies.forEach((family, familyIndex) => {
+    const details = document.createElement("details");
+    details.className = "material-family";
+    if (familyIndex === 0) details.open = true;
+
+    const summary = document.createElement("summary");
+    summary.textContent = family.family;
+    details.appendChild(summary);
+
+    const variants = document.createElement("div");
+    variants.className = "material-variants";
+
+    family.variants.forEach((variant, variantIndex) => {
+      const button = document.createElement("button");
+      button.className = "material-variant";
+      button.textContent = variant.name;
+      button.dataset.materialId = variant.id;
+
+      const supported = !printer?.supportedMaterials || printer.supportedMaterials.some(name => name.toLowerCase() === variant.name.toLowerCase());
+      if (!supported) {
+        button.classList.add("unsupported");
+        button.title = `${variant.name} is not listed as supported by ${printer.name}`;
+      }
+
+      button.addEventListener("click", () => selectMaterial(variant, family, button));
+      variants.appendChild(button);
+
+      if (familyIndex === 0 && variantIndex === 0 && !selectedMaterial) {
+        selectMaterial(variant, family, button);
+      }
+    });
+
+    details.appendChild(variants);
+    materialBrowser.appendChild(details);
+  });
+}
+
+function updateMaterialAvailability(printer) {
+  if (!materialFamilies.length) return;
+  renderMaterialLibrary();
+
+  if (selectedMaterial) {
+    const supported = printer.supportedMaterials?.some(name => name.toLowerCase() === selectedMaterial.name.toLowerCase());
+    if (!supported) {
+      document.getElementById("viewerStatus").textContent += " — selected material may not be supported";
+    }
   }
 }
 
