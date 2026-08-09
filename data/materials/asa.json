@@ -1,0 +1,24 @@
+{
+  "family": "ASA",
+  "icon": "blue",
+  "variants": [
+    {
+      "id": "asa",
+      "name": "ASA",
+      "description": "UV-resistant engineering material suited to outdoor parts.",
+      "recommendedNozzle": [245, 265],
+      "recommendedBed": [90, 110],
+      "fan": [0, 20],
+      "speed": [100, 250]
+    },
+    {
+      "id": "asa_hs",
+      "name": "ASA HS",
+      "description": "High-speed ASA for enclosed high-temperature printers.",
+      "recommendedNozzle": [255, 275],
+      "recommendedBed": [90, 110],
+      "fan": [0, 20],
+      "speed": [250, 450]
+    }
+  ]
+}
