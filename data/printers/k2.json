@@ -1,0 +1,8 @@
+{
+  "id": "k2",
+  "name": "Creality K2",
+  "manufacturer": "Creality",
+  "buildVolume": { "x": 260, "y": 260, "z": 260 },
+  "defaultNozzle": 0.4,
+  "supportedMaterials": ["PLA", "PLA HS", "PETG", "PETG HS", "ABS", "ABS HS", "ASA", "ASA HS"]
+}
