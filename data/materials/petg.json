@@ -1,0 +1,24 @@
+{
+  "family": "PETG",
+  "icon": "orange",
+  "variants": [
+    {
+      "id": "petg",
+      "name": "PETG",
+      "description": "Strong, durable material with good layer adhesion.",
+      "recommendedNozzle": [230, 250],
+      "recommendedBed": [70, 85],
+      "fan": [20, 50],
+      "speed": [100, 250]
+    },
+    {
+      "id": "petg_hs",
+      "name": "PETG HS",
+      "description": "High-speed PETG tuned for fast modern printers.",
+      "recommendedNozzle": [245, 265],
+      "recommendedBed": [70, 85],
+      "fan": [20, 50],
+      "speed": [250, 450]
+    }
+  ]
+}
