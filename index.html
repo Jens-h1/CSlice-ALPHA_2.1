@@ -1,222 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>CSlice</title>
-
 <link rel="stylesheet" href="css/style.css">
-
 </head>
-
-
 <body>
-
-
 <header>
-
-<div class="logo">
-<img src="assets/logo.svg">
-CSlice
-</div>
-
-
-<div class="top-buttons">
-
-<button>
-Open STL
-</button>
-
-<button>
-Save Project
-</button>
-
-</div>
-
+  <div class="logo">
+    <img src="assets/logo.svg" alt="CSlice logo">
+    <span>CSlice</span>
+  </div>
+  <div class="top-buttons">
+    <button id="openStlButton">Open STL</button>
+    <button id="saveProjectButton">Save Project</button>
+    <input id="stlInput" type="file" accept=".stl,model/stl" hidden>
+  </div>
 </header>
 
-
-
 <div class="slicer">
-
-
-
-<aside class="settings">
-
-
-<h2>Printer</h2>
-
-<select>
-<option>Creality K2 Plus</option>
-<option>Bambu Lab X1C</option>
-<option>Prusa MK4</option>
-</select>
-
-
-
-<h2>Filament</h2>
-
-<select>
-<option>PLA</option>
-<option>PLA HS</option>
-<option>PETG</option>
-<option>PETG HS</option>
-<option>ABS</option>
-<option>ABS hs</option>
-<option>ASA</option>
-<option>ASA HS</option>
-</select>
-
-
-
-
-<h2>Layer Height</h2>
-
-<select>
-<option>0.20mm Standard</option>
-<option>0.12mm High Quality</option>
-<option>0.28mm Fast</option>
-</select>
-
-
-
-
-<h2>Infill Percentage</h2>
-
-
-<label>
-Density:
-<span id="infillNumber">20</span>%
-</label>
-
-
-<input 
-type="range"
-id="infillSlider"
-min="0"
-max="100"
-value="20">
-
-
-<label>
-Pattern
-</label>
-
-
-<div class="patterns">
-
-
-<button class="pattern selected">
-
-<img src="assets/infill/grid.svg">
-
-Grid
-
-</button>
-
-
-
-<button class="pattern">
-
-<img src="assets/infill/gyroid.svg">
-
-Gyroid
-
-</button>
-
-
-
-<button class="pattern">
-
-<img src="assets/infill/cubic.svg">
-
-Cubic
-
-</button>
-
-
-
-<button class="pattern">
-
-<img src="assets/infill/honeycomb.svg">
-
-Triangles
-
-</button>
-
-
-
-<button class="pattern">
-
-<img src="assets/infill/lines.svg">
-
-Lines
-
-</button>
-
-
-
-<button class="pattern">
-
-<img src="assets/infill/lightning.svg">
-
-Lightning
-
-</button>
-
-
-
+  <aside class="settings">
+    <h2>Printer</h2>
+    <select id="printerSelect">
+      <option value="k2-plus">Creality K2 Plus</option>
+      <option value="x1c">Bambu Lab X1C</option>
+      <option value="mk4">Prusa MK4</option>
+    </select>
+
+    <h2>Filament</h2>
+    <select id="filamentSelect">
+      <option>PLA</option>
+      <option>PLA HS</option>
+      <option>PETG</option>
+      <option>PETG HS</option>
+      <option>ABS</option>
+      <option>ABS HS</option>
+      <option>ASA</option>
+      <option>ASA HS</option>
+    </select>
+
+    <h2>Layer Height</h2>
+    <select>
+      <option>0.20mm Standard</option>
+      <option>0.12mm High Quality</option>
+      <option>0.28mm Fast</option>
+    </select>
+
+    <h2>Infill Percentage</h2>
+    <label for="infillSlider">Density: <span id="infillNumber">20</span>%</label>
+    <input type="range" id="infillSlider" min="0" max="100" value="20">
+
+    <label>Pattern</label>
+    <div class="patterns">
+      <button class="pattern selected" data-pattern="Grid"><img src="assets/infill/grid.svg" alt="Grid">Grid</button>
+      <button class="pattern" data-pattern="Gyroid"><img src="assets/infill/gyroid.svg" alt="Gyroid">Gyroid</button>
+      <button class="pattern" data-pattern="Cubic"><img src="assets/infill/cubic.svg" alt="Cubic">Cubic</button>
+      <button class="pattern" data-pattern="Triangles"><img src="assets/infill/honeycomb.svg" alt="Triangles">Triangles</button>
+      <button class="pattern" data-pattern="Lines"><img src="assets/infill/lines.svg" alt="Lines">Lines</button>
+      <button class="pattern" data-pattern="Lightning"><img src="assets/infill/lightning.svg" alt="Lightning">Lightning</button>
+    </div>
+
+    <button class="slice">Slice Plate</button>
+  </aside>
+
+  <section class="viewer">
+    <div class="viewer-header">
+      <div>
+        <h2>3D Preview</h2>
+        <span id="viewerStatus">Ready — drop an STL onto the build plate</span>
+      </div>
+      <div class="viewer-actions">
+        <button id="fitButton" class="secondary">Fit Model</button>
+        <button id="resetViewButton" class="secondary">Reset View</button>
+      </div>
+    </div>
+
+    <div class="model" id="viewport">
+      <div class="drop-overlay" id="dropOverlay">
+        <strong>Drop STL here</strong>
+        <span>or click “Open STL”</span>
+      </div>
+    </div>
+
+    <div class="info" id="modelInfo">
+      <span>No model loaded</span>
+    </div>
+  </section>
 </div>
 
-
-
-<button class="slice">
-
-Slice Plate
-
-</button>
-
-
-
-</aside>
-
-
-
-
-
-<section class="viewer">
-
-
-<h2>3D Preview</h2>
-
-
-<div class="model">
-
-</div>
-
-
-
-<div class="info">
-
-No model loaded
-
-</div>
-
-
-</section>
-
-
-
-</div>
-
-
-
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.179.1/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.179.1/examples/jsm/"
+  }
+}
+</script>
+<script type="module" src="js/viewer.js"></script>
 <script src="js/app.js"></script>
-
-
 </body>
-
 </html>
