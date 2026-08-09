@@ -1,5 +1,10 @@
 {
   "printers": [
-    "k2_plus.json"
+    "k2_plus.json",
+    "k2.json",
+    "k1.json",
+    "k1_max.json",
+    "bambu_x1c.json",
+    "prusa_mk4.json"
   ]
 }
