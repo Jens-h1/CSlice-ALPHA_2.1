@@ -1,0 +1,8 @@
+{
+  "id": "k1-max",
+  "name": "Creality K1 Max",
+  "manufacturer": "Creality",
+  "buildVolume": { "x": 300, "y": 300, "z": 300 },
+  "defaultNozzle": 0.4,
+  "supportedMaterials": ["PLA", "PLA HS", "PETG", "PETG HS", "ABS", "ABS HS", "ASA", "ASA HS"]
+}
