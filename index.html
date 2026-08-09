@@ -2,53 +2,24 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>CSlice</title>
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/welcome.css">
 </head>
 <body>
 <header>
-  <div class="logo">
-    <img src="assets/logo.svg" alt="CSlice logo">
-    <span>CSlice</span>
-  </div>
-  <div class="top-buttons">
-    <button id="openStlButton">Open STL</button>
-    <button id="saveProjectButton">Save Project</button>
-    <input id="stlInput" type="file" accept=".stl,model/stl" hidden>
-  </div>
+  <div class="logo"><img src="assets/logo.svg" alt="CSlice logo"><span>CSlice</span></div>
+  <div class="top-buttons"><button id="openStlButton">Open STL</button><button id="saveProjectButton">Save Project</button><input id="stlInput" type="file" accept=".stl,model/stl" hidden></div>
 </header>
-
 <div class="slicer">
   <aside class="settings">
-    <h2>Printer</h2>
-    <select id="printerSelect">
-      <option>Loading printers…</option>
-    </select>
-
-    <h2>Filament</h2>
-    <div class="material-browser" id="materialBrowser">
-      <div class="material-loading">Loading material library…</div>
-    </div>
-    <div class="material-card" id="materialCard">
-      <strong id="materialName">No material selected</strong>
-      <span id="materialDescription">Choose a material family and variant.</span>
-      <div class="material-specs" id="materialSpecs"></div>
-    </div>
-
-    <h2>Layer Height</h2>
-    <select id="layerHeightSelect">
-      <option>0.20mm Standard</option>
-      <option>0.12mm High Quality</option>
-      <option>0.28mm Fast</option>
-    </select>
-
-    <h2>Infill Percentage</h2>
-    <label for="infillSlider">Density: <span id="infillNumber">20</span>%</label>
-    <input type="range" id="infillSlider" min="0" max="100" value="20">
-
-    <label>Pattern</label>
-    <div class="patterns">
+    <h2>Printer</h2><select id="printerSelect"><option>Loading printers…</option></select>
+    <h2>Filament</h2><div class="material-browser" id="materialBrowser"><div class="material-loading">Loading material library…</div></div>
+    <div class="material-card" id="materialCard"><strong id="materialName">No material selected</strong><span id="materialDescription">Choose a material family and variant.</span><div class="material-specs" id="materialSpecs"></div></div>
+    <h2>Layer Height</h2><select id="layerHeightSelect"><option>0.20mm Standard</option><option>0.12mm High Quality</option><option>0.28mm Fast</option></select>
+    <h2>Infill Percentage</h2><label for="infillSlider">Density: <span id="infillNumber">20</span>%</label><input type="range" id="infillSlider" min="0" max="100" value="20">
+    <label>Pattern</label><div class="patterns">
       <button class="pattern selected" data-pattern="Grid"><img src="assets/infill/grid.svg" alt="Grid">Grid</button>
       <button class="pattern" data-pattern="Gyroid"><img src="assets/infill/gyroid.svg" alt="Gyroid">Gyroid</button>
       <button class="pattern" data-pattern="Cubic"><img src="assets/infill/cubic.svg" alt="Cubic">Cubic</button>
@@ -56,47 +27,17 @@
       <button class="pattern" data-pattern="Lines"><img src="assets/infill/lines.svg" alt="Lines">Lines</button>
       <button class="pattern" data-pattern="Lightning"><img src="assets/infill/lightning.svg" alt="Lightning">Lightning</button>
     </div>
-
     <button class="slice">Slice Plate</button>
   </aside>
-
   <section class="viewer">
-    <div class="viewer-header">
-      <div>
-        <h2>3D Preview</h2>
-        <span id="viewerStatus">Ready — drop an STL onto the build plate</span>
-      </div>
-      <div class="viewer-actions">
-        <button id="moveButton" class="secondary tool-button active">Move</button>
-        <button id="rotateButton" class="secondary tool-button">Rotate</button>
-        <button id="scaleButton" class="secondary tool-button">Scale</button>
-        <button id="fitButton" class="secondary">Fit</button>
-        <button id="resetViewButton" class="secondary">Reset</button>
-      </div>
-    </div>
-
-    <div class="model" id="viewport">
-      <div class="drop-overlay" id="dropOverlay">
-        <strong>Drop STL here</strong>
-        <span>or click “Open STL”</span>
-      </div>
-    </div>
-
-    <div class="info" id="modelInfo">
-      <span>No model loaded</span>
-    </div>
+    <div class="viewer-header"><div><h2>3D Preview</h2><span id="viewerStatus">Ready — drop an STL onto the build plate</span></div><div class="viewer-actions"><button id="moveButton" class="secondary tool-button active">Move</button><button id="rotateButton" class="secondary tool-button">Rotate</button><button id="scaleButton" class="secondary tool-button">Scale</button><button id="fitButton" class="secondary">Fit</button><button id="resetViewButton" class="secondary">Reset</button></div></div>
+    <div class="model" id="viewport"><div class="drop-overlay" id="dropOverlay"><strong>Drop STL here</strong><span>or click “Open STL”</span></div></div>
+    <div class="info" id="modelInfo"><span>No model loaded</span></div>
   </section>
 </div>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.179.1/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.179.1/examples/jsm/"
-  }
-}
-</script>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.179.1/build/three.module.js","three/addons/":"https://unpkg.com/three@0.179.1/examples/jsm/"}}</script>
 <script type="module" src="js/viewer.js"></script>
+<script type="module">import {initWelcome} from './js/welcome.js'; initWelcome();</script>
 <script src="js/app.js"></script>
 </body>
 </html>
