@@ -40,33 +40,49 @@ scene.add(fillLight);
 const buildPlate = new THREE.Group();
 scene.add(buildPlate);
 
-const plateSize = 350;
+let buildWidth = 350;
+let buildDepth = 350;
+
 const plate = new THREE.Mesh(
-  new THREE.BoxGeometry(plateSize, plateSize, 2),
+  new THREE.BoxGeometry(1, 1, 2),
   new THREE.MeshStandardMaterial({ color: 0x182235, roughness: 0.82, metalness: 0.08 })
 );
 plate.position.z = -1;
 buildPlate.add(plate);
 
-const grid = new THREE.GridHelper(plateSize, 35, 0x3b82f6, 0x334155);
+const grid = new THREE.GridHelper(1, 35, 0x3b82f6, 0x334155);
 grid.rotation.x = Math.PI / 2;
 grid.position.z = 0.15;
 buildPlate.add(grid);
 
-const borderPoints = [
-  new THREE.Vector3(-175, -175, 0.3),
-  new THREE.Vector3(175, -175, 0.3),
-  new THREE.Vector3(175, 175, 0.3),
-  new THREE.Vector3(-175, 175, 0.3),
-  new THREE.Vector3(-175, -175, 0.3)
-];
-const borderGeometry = new THREE.BufferGeometry().setFromPoints(borderPoints);
+const borderGeometry = new THREE.BufferGeometry();
 const border = new THREE.Line(borderGeometry, new THREE.LineBasicMaterial({ color: 0x60a5fa }));
 buildPlate.add(border);
 
 const axes = new THREE.AxesHelper(55);
-axes.position.set(-150, -150, 1);
 scene.add(axes);
+
+function setBuildPlate(width, depth) {
+  buildWidth = Number(width) || 350;
+  buildDepth = Number(depth) || 350;
+
+  plate.scale.set(buildWidth, buildDepth, 1);
+  grid.scale.set(buildWidth, buildDepth, 1);
+
+  const halfWidth = buildWidth / 2;
+  const halfDepth = buildDepth / 2;
+  borderGeometry.setFromPoints([
+    new THREE.Vector3(-halfWidth, -halfDepth, 0.3),
+    new THREE.Vector3(halfWidth, -halfDepth, 0.3),
+    new THREE.Vector3(halfWidth, halfDepth, 0.3),
+    new THREE.Vector3(-halfWidth, halfDepth, 0.3),
+    new THREE.Vector3(-halfWidth, -halfDepth, 0.3)
+  ]);
+
+  axes.position.set(-halfWidth + 25, -halfDepth + 25, 1);
+}
+
+setBuildPlate(350, 350);
 
 let currentModel = null;
 let currentModelSize = null;
@@ -85,10 +101,11 @@ function setStatus(text) {
 }
 
 function updateInfo(name, size) {
+  const fits = size.x <= buildWidth && size.y <= buildDepth;
   modelInfo.innerHTML = `
     <span><strong>${escapeHtml(name)}</strong></span>
     <span>${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)} mm</span>
-    <span>Centered on build plate</span>
+    <span>${fits ? "Fits build plate" : "Outside build plate"}</span>
   `;
 }
 
@@ -100,14 +117,14 @@ function escapeHtml(value) {
 
 function fitModel() {
   if (!currentModel || !currentModelSize) {
-    camera.position.set(300, 300, 350);
+    camera.position.set(Math.max(buildWidth, buildDepth) * 0.85, Math.max(buildWidth, buildDepth) * 0.85, Math.max(buildWidth, buildDepth));
     controls.target.set(0, 0, 0);
     controls.update();
     return;
   }
 
   const maxSize = Math.max(currentModelSize.x, currentModelSize.y, currentModelSize.z);
-  const distance = Math.max(maxSize * 2.0, 260);
+  const distance = Math.max(maxSize * 2.0, Math.max(buildWidth, buildDepth) * 0.9, 260);
   camera.position.set(distance, distance * 0.85, distance);
   controls.target.set(0, 0, currentModelSize.z * 0.25);
   controls.update();
@@ -135,12 +152,9 @@ export function loadSTL(arrayBuffer, fileName = "model.stl") {
 
     const boxBeforePlacement = new THREE.Box3().setFromBufferAttribute(geometry.getAttribute("position"));
     const size = boxBeforePlacement.getSize(new THREE.Vector3());
+    const fits = size.x <= buildWidth && size.y <= buildDepth;
 
-    if (size.x > plateSize || size.y > plateSize) {
-      setStatus("Model is larger than the 350 × 350 mm build plate");
-    } else {
-      setStatus(`${fileName} loaded successfully`);
-    }
+    setStatus(fits ? `${fileName} loaded successfully` : `${fileName} is larger than the build plate`);
 
     removeCurrentModel();
 
@@ -173,8 +187,9 @@ export function loadSTL(arrayBuffer, fileName = "model.stl") {
 window.csliceViewer = {
   loadSTL,
   fitModel,
+  setBuildPlate,
   resetView: () => {
-    camera.position.set(300, 300, 350);
+    camera.position.set(Math.max(buildWidth, buildDepth) * 0.85, Math.max(buildWidth, buildDepth) * 0.85, Math.max(buildWidth, buildDepth));
     controls.target.set(0, 0, 0);
     controls.update();
   }
